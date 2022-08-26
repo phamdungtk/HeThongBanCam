@@ -26,7 +26,7 @@ namespace HeThongBanCam.Controllers
     {
         private WebContext db;
 
-        public static User user = new User();
+        //public static NguoiDung user = new NguoiDung();
         private IConfiguration _configuration;
         private IUserService _userService;
 
@@ -58,12 +58,12 @@ namespace HeThongBanCam.Controllers
         }
         [HttpPost("register")]
         //public IActionResult Register([FromBody] NguoiDung request)
-        public async Task<ActionResult<User>> Register(NguoiDung request)
+        public async Task<ActionResult<NguoiDung>> Register(NguoiDung request)
         {
             db.NguoiDungs.Add(request);
             CreatePasswordHash(request.TaiKhoan, out byte[] passwordHash, out byte[] passwordSalt);
 
-            user.TaiKhoan  = request.TaiKhoan;//viết bên fe dùng gmail tránh trùng lặp tài khoản
+            //user.TaiKhoan  = request.TaiKhoan;//viết bên fe dùng gmail tránh trùng lặp tài khoản
             //user.TenNguoiDung = request.TenNguoiDung;
             //user.Sdt = request.Sdt;
             //user.QueQuan = request.QueQuan;
@@ -76,10 +76,10 @@ namespace HeThongBanCam.Controllers
             request.PasswordHash = passwordHash;
             request.PasswordSalt = passwordSalt;
             db.SaveChanges();
-            return Ok(user);
+            return Ok(request);
         }
         [HttpPost("login")]
-        public async Task<ActionResult<string>> Login(NguoiDung request)
+        public IActionResult Login([FromBody] /*async Task<ActionResult<string>>*/ NguoiDung request)
         {
 
             //if (user.TaiKhoan != request.TaiKhoan)
@@ -92,33 +92,33 @@ namespace HeThongBanCam.Controllers
                 return BadRequest("Wrong password.");
             }
             //return Ok("My crazy token");
-            string token = CreateToken(user);
+            string token = CreateToken(request);
 
             var refreshToken = GenerateRefreshToken();
             SetRefreshToken(refreshToken);
 
             return Ok(token);
         }
-        [HttpPost("refresh-token")]
-        public async Task<ActionResult<string>> RefreshToken()
-        {
-            var refreshToken = Request.Cookies["refreshToken"];
+        //[HttpPost("refresh-token")]
+        //public async Task<ActionResult<string>> RefreshToken()
+        //{
+        //    var refreshToken = Request.Cookies["refreshToken"];
 
-            if (!user.RefreshToken.Equals(refreshToken))
-            {
-                return Unauthorized("Invalid Refresh Token.");
-            }
-            else if (user.TokenExpires < DateTime.Now)
-            {
-                return Unauthorized("Token expired.");
-            }
+        //    if (!db.RefreshToken.Equals(refreshToken))
+        //    {
+        //        return Unauthorized("Invalid Refresh Token.");
+        //    }
+        //    else if (user.TokenExpires < DateTime.Now)
+        //    {
+        //        return Unauthorized("Token expired.");
+        //    }
 
-            string token = CreateToken(user);
-            var newRefreshToken = GenerateRefreshToken();
-            SetRefreshToken(newRefreshToken);
+        //    string token = CreateToken(request);
+        //    var newRefreshToken = GenerateRefreshToken();
+        //    SetRefreshToken(newRefreshToken);
 
-            return Ok(token);
-        }
+        //    return Ok(token);
+        //}
 
         private void SetRefreshToken(RefreshToken newRefreshToken)
         {
@@ -129,9 +129,9 @@ namespace HeThongBanCam.Controllers
             };
             Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
 
-            user.RefreshToken = newRefreshToken.Token;
-            user.TokenCreated = newRefreshToken.Created;
-            user.TokenExpires = newRefreshToken.Expires;
+            //user.RefreshToken = newRefreshToken.Token;
+            //user.TokenCreated = newRefreshToken.Created;
+            //user.TokenExpires = newRefreshToken.Expires;
         }
         private RefreshToken GenerateRefreshToken()
         {
@@ -144,11 +144,11 @@ namespace HeThongBanCam.Controllers
 
             return refreshToken;
         }
-        private string CreateToken(User user)
+        private string CreateToken(NguoiDung user)
         {
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.TaiKhoan),
+                new Claim(ClaimTypes.Name, user.TenNguoiDung),
                 new Claim(ClaimTypes.Role, "Admin")
             };
 
