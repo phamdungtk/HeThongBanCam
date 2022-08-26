@@ -39,12 +39,12 @@ namespace HeThongBanCam.Controllers
         [HttpGet, Authorize]
         public ActionResult<string> GetMe()
         {
-            var userName = _userService.GetMyName();
-            return Ok(userName);
+            var TaiKhoan = _userService.GetMyName();
+            return Ok(TaiKhoan);
         }
-        [Route("Get-All")]
-        [HttpGet/*, Authorize(Roles = "Admin")*/]
-        public IActionResult getalla()
+        [Route("Get_All")]
+        [HttpGet]
+        public IActionResult getall()
         {
             try
             {
@@ -63,9 +63,13 @@ namespace HeThongBanCam.Controllers
             db.NguoiDungs.Add(request);
             CreatePasswordHash(request.TaiKhoan, out byte[] passwordHash, out byte[] passwordSalt);
 
-            user.Username  = request.TaiKhoan;//viết bên fe dùng gmail tránh trùng lặp tài khoản
+            user.TaiKhoan  = request.TaiKhoan;//viết bên fe dùng gmail tránh trùng lặp tài khoản
+            //user.TenNguoiDung = request.TenNguoiDung;
+            //user.Sdt = request.Sdt;
+            //user.QueQuan = request.QueQuan;
+            //user.Gmail = request.Gmail;
             //user.Password = request.MatKhau;
-            //if (user.Username == request.TaiKhoan)
+            //if (user.TaiKhoan == request.TaiKhoan)
             //{
             //    return BadRequest("Trùng tài Khoản");
             //}
@@ -78,7 +82,7 @@ namespace HeThongBanCam.Controllers
         public async Task<ActionResult<string>> Login(NguoiDung request)
         {
 
-            //if (user.Username != request.TaiKhoan)
+            //if (user.TaiKhoan != request.TaiKhoan)
             //{
             //    return BadRequest("User not found.");
             //}
@@ -144,7 +148,7 @@ namespace HeThongBanCam.Controllers
         {
             List<Claim> claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Name, user.TaiKhoan),
                 new Claim(ClaimTypes.Role, "Admin")
             };
 
