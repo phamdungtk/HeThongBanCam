@@ -114,15 +114,23 @@ namespace HeThongBanCam.Controllers
 
             return Ok(new { data = "OK" });
         }
-        [Route("thongke-Invoice")]
+        [Route("thongketong-Invoice")]
         [HttpPost]
-        public decimal tkInvoice(int Thang, int Nam)
+        public decimal tkInvoice()
+        {    
+            decimal TongTienn = 0;
+                TongTienn += decimal.Parse(db.ChiTietDonHangs.Sum(s => s.SoLuong * s.DonGia).ToString());
+            return TongTienn;
+        }
+        [Route("thongke-Invoice{Thang}/{Nam}")]
+        [HttpPost]
+        public decimal tkNgayInvoice( int Thang, int Nam)
         {
             var obj = db.DonHangs.Where(s => s.NgayTao.Month == Thang && s.NgayTao.Year == Nam);
             decimal TongTienn = 0;
             foreach (var item in obj)
             {
-                TongTienn += decimal.Parse(item.ChiTietDonHangs.Sum(s => s.SoLuong * s.DonGia).ToString());
+            TongTienn += decimal.Parse(item.ChiTietDonHangs.Sum(s => s.SoLuong * s.DonGia).ToString());
             }
             return TongTienn;
         }

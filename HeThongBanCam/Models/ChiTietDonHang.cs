@@ -9,7 +9,7 @@ namespace HeThongBanCam.Models
         public string? MaDonHang { get; set; }
         public int? MaCamera { get; set; }
         public int SoLuong { get; set; }
-        public int? DonGia { get; set; }
+        public int DonGia { get; set; }
 
         public virtual Camera? MaCameraNavigation { get; set; }
         public virtual DonHang? MaDonHangNavigation { get; set; }

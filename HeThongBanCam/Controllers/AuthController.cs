@@ -1,6 +1,4 @@
-﻿
-
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -13,8 +11,9 @@ using System.Text;
 using System.Threading.Tasks;
 using HeThongBanCam.Models;
 using HeThongBanCam.Helpers;
-using System.Security.Cryptography;
+//using System.Security.Cryptography;
 using HeThongBanCam.Services.UserService;
+using System.Security.Cryptography;
 
 namespace HeThongBanCam.Controllers
 {
@@ -23,7 +22,7 @@ namespace HeThongBanCam.Controllers
     public class AuthController : Controller
     {
         private WebContext db;
-        //public static NguoiDung user = new NguoiDung();
+        public static NguoiDung user = new NguoiDung();
         private IConfiguration _configuration;
         private IUserService _userService;
         public AuthController(IConfiguration configuration, IUserService userService)
@@ -90,7 +89,7 @@ namespace HeThongBanCam.Controllers
             //var user = db.NguoiDungs.SingleOrDefault(x => x.TenNguoiDung == TenNguoiDung);
             if (!VerifyPasswordHash(request.TaiKhoan, request.PasswordHash, request.PasswordSalt))
             {
-                
+
                 return BadRequest("Wrong password.");
             }
             //return Ok("My crazy token");
@@ -103,15 +102,15 @@ namespace HeThongBanCam.Controllers
         //public async Task<ActionResult<string>> RefreshToken()
         //{
         //    var refreshToken = Request.Cookies["refreshToken"];
-        //    //if (!db.RefreshToken.Equals(refreshToken))
-        //    //{
-        //    //    return Unauthorized("Invalid Refresh Token.");
-        //    //}
-        //    //else if (user.TokenExpires < DateTime.Now)
-        //    //{
-        //    //    return Unauthorized("Token expired.");
-        //    //}
-        //    //string token = CreateToken(user);
+        //    if (!user.RefreshToken.Equals(refreshToken))
+        //    {
+        //        return Unauthorized("Invalid Refresh Token.");
+        //    }
+        //    else if (user.TokenExpires < DateTime.Now)
+        //    {
+        //        return Unauthorized("Token expired.");
+        //    }
+        //    string token = CreateToken(user);
         //    var newRefreshToken = GenerateRefreshToken();
         //    SetRefreshToken(newRefreshToken);
         //    return Ok(refreshToken);
@@ -124,9 +123,9 @@ namespace HeThongBanCam.Controllers
         //        Expires = newRefreshToken.Expires
         //    };
         //    Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
-        //    //user.RefreshToken = newRefreshToken.Token;
-        //    //user.TokenCreated = newRefreshToken.Created;
-        //    //user.TokenExpires = newRefreshToken.Expires;
+        //    user.RefreshToken = newRefreshToken.Token;
+        //    user.TokenCreated = newRefreshToken.Created;
+        //    user.TokenExpires = newRefreshToken.Expires;
         //}
         //private RefreshToken GenerateRefreshToken()
         //{
@@ -145,7 +144,7 @@ namespace HeThongBanCam.Controllers
                 new Claim(ClaimTypes.Name, user.TenNguoiDung),
                 new Claim(ClaimTypes.Role, "Admin")
             };
-            var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(
+            var key = new SymmetricSecurityKey(System.Text.ASCIIEncoding.UTF8.GetBytes(
                 _configuration.GetSection("AppSettings:Token").Value));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
             var token = new JwtSecurityToken(
@@ -155,29 +154,38 @@ namespace HeThongBanCam.Controllers
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
             return jwt;
         }
-        //private RefreshToken GenerateRefreshToken()
-        //{
-        //    var refreshToken = new RefreshToken
-        //    {
-        //        Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-        //        Expires = DateTime.Now.AddDays(7),
-        //        Created = DateTime.Now
-        //    };
-        //    return refreshToken;
-        //}
         private void CreatePasswordHash(string TenNguoiDung, out byte[] passwordHash, out byte[] passwordSalt)
         {
-            using (var hmac = new HMACSHA512())
+            using (var hmac = new HMACSHA256())
+
             {
+                byte[] storedHash = new byte[hmac.HashSize / 8];
                 passwordSalt = hmac.Key;
-                passwordHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(TenNguoiDung));
+                passwordHash = hmac.ComputeHash(System.Text.ASCIIEncoding.UTF8.GetBytes(TenNguoiDung));
                 string encodedData = Convert.ToBase64String(passwordHash);
                 //return encodedData;
             }
         }
+        private string HMACSHA256(string message, string secret)
+        {
+            secret = secret ?? "";
+            var encoding = new System.Text.ASCIIEncoding();
+            byte[] keyByte = encoding.GetBytes(secret);
+            byte[] messageBytes = encoding.GetBytes(message);
+            using (var hmacsha256 = new HMACSHA256(keyByte))
+            {
+                byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
+                string sbinary = "";
+                for (int i = 0; i < hashmessage.Length; i++)
+                {
+                    sbinary += hashmessage[i].ToString("x2"); // hex format
+                }
+                return sbinary;
+            }
+        }
         private bool VerifyPasswordHash(string TenNguoiDung, byte[] passwordHash, byte[] passwordSalt)
         {
-            using (var hmac = new HMACSHA512(passwordSalt))
+            using (var hmac = new HMACSHA256(passwordSalt))
             {
                 var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(TenNguoiDung));
                 return computedHash.SequenceEqual(passwordHash);
@@ -209,4 +217,3 @@ namespace HeThongBanCam.Controllers
 
     }
 }
-
