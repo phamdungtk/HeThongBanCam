@@ -184,17 +184,18 @@ namespace HeThongBanCam.Controllers
             }
         }
 
-        //[HttpPost("changepassword")]
-        //public IActionResult changepassword([FromBody] NguoiDung model)
-        //{
-        //    var obj = db.NguoiDungs.Where(s => s.TaiKhoan == model.TaiKhoan).SingleOrDefault();
-        //    if (obj != null)
-        //    {              
-        //        obj.PasswordHash = model.PasswordHash;
-        //        db.SaveChanges();
-        //    }
-        //    return Ok(new { data = "OK" });
-        //}
+        [HttpPost("changepassword")]
+        public IActionResult changepassword([FromBody] NguoiDung model)
+        {
+            var obj = db.NguoiDungs.Where(s => s.TaiKhoan == model.TaiKhoan).SingleOrDefault();
+            if (obj != null)
+            {
+                obj.PasswordHash = model.PasswordHash;// sửa dữ liệu từ byte sang string 
+
+                db.SaveChanges();
+            }
+            return Ok(new { data = "OK" });
+        }
         [Route("delete-auth/{id}")]
         [HttpDelete, Authorize(Roles = "Admin")]
         public IActionResult deleteproduct(int id)
