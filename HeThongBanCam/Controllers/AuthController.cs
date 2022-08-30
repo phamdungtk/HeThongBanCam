@@ -14,6 +14,7 @@ using HeThongBanCam.Helpers;
 //using System.Security.Cryptography;
 using HeThongBanCam.Services.UserService;
 using System.Security.Cryptography;
+using Microsoft.EntityFrameworkCore;
 
 namespace HeThongBanCam.Controllers
 {
@@ -22,7 +23,7 @@ namespace HeThongBanCam.Controllers
     public class AuthController : Controller
     {
         private WebContext db;
-        public static NguoiDung user = new NguoiDung();
+        public static UserDto user = new UserDto();
         private IConfiguration _configuration;
         private IUserService _userService;
         public AuthController(IConfiguration configuration, IUserService userService)
@@ -51,96 +52,138 @@ namespace HeThongBanCam.Controllers
                 return Ok("Err");
             }
         }
-        [HttpPost("register")]
-        //public IActionResult Register([FromBody] NguoiDung request)
-        public async Task<ActionResult<NguoiDung>> Register(NguoiDung request)
+        private async Task<Responsive> Validate(NguoiDung nd, bool isUpdate = false)
         {
-            db.NguoiDungs.Add(request);
-            CreatePasswordHash(request.TaiKhoan, out byte[] passwordHash, out byte[] passwordSalt);
-            //user.TaiKhoan  = request.TaiKhoan;//viết bên fe dùng gmail tránh trùng lặp tài khoản
-            //user.TenNguoiDung = request.TenNguoiDung;
-            //user.Sdt = request.Sdt;
-            //user.QueQuan = request.QueQuan;
-            //user.Gmail = request.Gmail;
-            //user.Password = request.MatKhau;
-            //if (user.TaiKhoan == request.TaiKhoan)
+            var message = "";
+            if (nd == null)
+            {
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (nd.TaiKhoan == null)
+            {
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (nd.MatKhau == null)
+            {
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (nd.TenNguoiDung == null)
+            {
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (isUpdate == true)
+            {
+                var entity = db.NguoiDungs.Find(nd.TaiKhoan);
+                if (entity != null && entity.TaiKhoan != nd.TaiKhoan)
+                {
+                    message = "Tài Khoản đã tồn tại";
+                    return new Responsive(message);
+                }
+            }
+            if (isUpdate == false)
+            {
+                var entity = db.NguoiDungs.Find(nd.TaiKhoan);
+                if (entity != null)
+                {
+                    message = "Tài Khoản đã tồn tại";
+                    return new Responsive(message);
+                }
+            }
+            return new Responsive("", true);
+        }
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] NguoiDung request)
+        {
+            //try
             //{
-            //    return BadRequest("Trùng tài Khoản");
+            //    if (request == null)
+            //    {
+            //        return BadRequest("error");
+            //    }
+            //    var isvalid = await Validate(request);
+            //    if (!isvalid.isOk)
+            //    {
+            //        return BadRequest(isvalid.Message);
+            //    }
+            //    else
+            //    {
+            //        request.TenNguoiDung = request.TenNguoiDung;
+            //        db.NguoiDungs.Add(request);
+
+            //        db.SaveChanges();
+            //        return Ok(request);
+            //    }
+            //    //db.Cameras.Add(model);           
             //}
-            request.PasswordHash = passwordHash;
-            request.PasswordSalt = passwordSalt;
+            //catch (Exception ex)
+            //{
+            //    return BadRequest(ex.Message);
+            //}
+            request.TenNguoiDung = request.TenNguoiDung;
+            db.NguoiDungs.Add(request);
+
             db.SaveChanges();
             return Ok(request);
         }
+
         [HttpPost("login")]
-        public IActionResult Login([FromBody] /*async Task<ActionResult<string>>*/ NguoiDung request)
+
+        public async Task<ActionResult<string>> Login(NguoiDung request)
         {
-            //if (user.TaiKhoan != request.TaiKhoan)
+            //if (request == null)
             //{
-            //    return BadRequest("User not found.");
+            //    return BadRequest("error");
             //}
-            //
-            var obj = db.NguoiDungs.Where(s => s.TaiKhoan == request.TaiKhoan && s.PasswordHash == request.PasswordHash).SingleOrDefault();
+            //var isvalid = await Validate(request);
+            //if (!isvalid.isOk)
+            //{
+            //    return BadRequest(isvalid.Message);
+            //}
+            //else
+            //{
+            //    var userName = request.TaiKhoan;
+            //    var Pass = request.MatKhau;
+            //    var user = db.NguoiDungs.SingleOrDefault(x => x.TaiKhoan == userName && x.MatKhau == Pass);
+            //    if (user == null)
+            //    {
+            //        return Ok(new { message = "Tài khoản hoặc mật khẩu không chính xác" });
+            //    }
+
+            //    var obj = db.NguoiDungs.Where(s => s.TaiKhoan == request.TaiKhoan && s.MatKhau == request.MatKhau).SingleOrDefault();
+            //    if (obj != null)
+            //    {
+            //        obj.TenNguoiDung = request.TenNguoiDung;
+            //        db.SaveChanges();
+            //    }
+            //    string token = CreateToken(request);
+            //    return Ok(token);
+            //}
+            var userName = request.TaiKhoan;
+            var Pass = request.MatKhau;
+            var user = db.NguoiDungs.SingleOrDefault(x => x.TaiKhoan == userName && x.MatKhau == Pass);
+            if (user == null)
+            {
+                return Ok(new { message = "Tài khoản hoặc mật khẩu không chính xác" });
+            }
+
+            var obj = db.NguoiDungs.Where(s => s.TaiKhoan == request.TaiKhoan && s.MatKhau == request.MatKhau).SingleOrDefault();
             if (obj != null)
             {
                 obj.TenNguoiDung = request.TenNguoiDung;
                 db.SaveChanges();
             }
-            //var user = db.NguoiDungs.SingleOrDefault(x => x.TenNguoiDung == TenNguoiDung);
-            if (!VerifyPasswordHash(request.TaiKhoan, request.PasswordHash, request.PasswordSalt))
-            {
-
-                return BadRequest("Wrong password.");
-            }
-            //return Ok("My crazy token");
             string token = CreateToken(request);
-            //var refreshToken = GenerateRefreshToken();
-            //SetRefreshToken(refreshToken);
             return Ok(token);
-        }
-        //[HttpPost("refresh-token")]
-        //public async Task<ActionResult<string>> RefreshToken()
-        //{
-        //    var refreshToken = Request.Cookies["refreshToken"];
-        //    if (!user.RefreshToken.Equals(refreshToken))
-        //    {
-        //        return Unauthorized("Invalid Refresh Token.");
-        //    }
-        //    else if (user.TokenExpires < DateTime.Now)
-        //    {
-        //        return Unauthorized("Token expired.");
-        //    }
-        //    string token = CreateToken(user);
-        //    var newRefreshToken = GenerateRefreshToken();
-        //    SetRefreshToken(newRefreshToken);
-        //    return Ok(refreshToken);
-        //}
-        //private void SetRefreshToken(RefreshToken newRefreshToken)
-        //{
-        //    var cookieOptions = new CookieOptions
-        //    {
-        //        HttpOnly = true,
-        //        Expires = newRefreshToken.Expires
-        //    };
-        //    Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
-        //    user.RefreshToken = newRefreshToken.Token;
-        //    user.TokenCreated = newRefreshToken.Created;
-        //    user.TokenExpires = newRefreshToken.Expires;
-        //}
-        //private RefreshToken GenerateRefreshToken()
-        //{
-        //    var refreshToken = new RefreshToken
-        //    {
-        //        Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-        //        Expires = DateTime.Now.AddDays(7),
-        //        Created = DateTime.Now
-        //    };
-        //    return refreshToken;
-        //}
+        }    
         private string CreateToken(NguoiDung user)
         {
             List<Claim> claims = new List<Claim>
             {
+                new Claim(ClaimTypes.Actor,user.TaiKhoan),
                 new Claim(ClaimTypes.Name, user.TenNguoiDung),
                 new Claim(ClaimTypes.Role, "Admin")
             };
@@ -153,52 +196,14 @@ namespace HeThongBanCam.Controllers
                 signingCredentials: creds);
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
             return jwt;
-        }
-        private void CreatePasswordHash(string TenNguoiDung, out byte[] passwordHash, out byte[] passwordSalt)
-        {
-            using (var hmac = new HMACSHA256())
-
-            {
-                byte[] storedHash = new byte[hmac.HashSize / 8];
-                passwordSalt = hmac.Key;
-                passwordHash = hmac.ComputeHash(System.Text.ASCIIEncoding.UTF8.GetBytes(TenNguoiDung));
-                string encodedData = Convert.ToBase64String(passwordHash);
-                //return encodedData;
-            }
-        }
-        private string HMACSHA256(string message, string secret)
-        {
-            secret = secret ?? "";
-            var encoding = new System.Text.ASCIIEncoding();
-            byte[] keyByte = encoding.GetBytes(secret);
-            byte[] messageBytes = encoding.GetBytes(message);
-            using (var hmacsha256 = new HMACSHA256(keyByte))
-            {
-                byte[] hashmessage = hmacsha256.ComputeHash(messageBytes);
-                string sbinary = "";
-                for (int i = 0; i < hashmessage.Length; i++)
-                {
-                    sbinary += hashmessage[i].ToString("x2"); // hex format
-                }
-                return sbinary;
-            }
-        }
-        private bool VerifyPasswordHash(string TenNguoiDung, byte[] passwordHash, byte[] passwordSalt)
-        {
-            using (var hmac = new HMACSHA256(passwordSalt))
-            {
-                var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(TenNguoiDung));
-                return computedHash.SequenceEqual(passwordHash);
-            }
-        }
-
+        }         
         [HttpPost("changepassword")]
         public IActionResult changepassword([FromBody] NguoiDung model)
         {
             var obj = db.NguoiDungs.Where(s => s.TaiKhoan == model.TaiKhoan).SingleOrDefault();
             if (obj != null)
             {
-                obj.PasswordHash = model.PasswordHash;// sửa dữ liệu từ byte sang string 
+                obj.MatKhau = model.MatKhau;
 
                 db.SaveChanges();
             }

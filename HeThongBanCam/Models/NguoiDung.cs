@@ -6,9 +6,8 @@ namespace HeThongBanCam.Models
     public partial class NguoiDung
     {
         public int MaNguoiDung { get; set; }
-        public byte[]? PasswordHash { get; set; }
-        public byte[]? PasswordSalt { get; set; }
-        public string TaiKhoan { get; set; } = null!;
+        public string? TaiKhoan { get; set; }
+        public string MatKhau { get; set; }
         public string? TenNguoiDung { get; set; }
         public int? Sdt { get; set; }
         public string? QueQuan { get; set; }

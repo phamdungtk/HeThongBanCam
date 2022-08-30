@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Castle.Core" Version="5.1.0" />
     <PackageReference Include="Google.Apis.Core" Version="1.57.0" />
+    <PackageReference Include="Microsoft.AspNet.WebPages" Version="3.2.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.8">
       <PrivateAssets>all</PrivateAssets>

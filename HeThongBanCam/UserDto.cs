@@ -2,9 +2,8 @@
 {
     public class UserDto
     {
-        public string Username { get; set; } = string.Empty;
-        public byte[]? PasswordHash { get; set; }
-        public byte[]? PasswordSalt { get; set; }
-        public bool RememberMe { get; set; }
+        public string TaiKhoan { get; set; } = string.Empty;
+        public string MatKhau { get; set; } = string.Empty;
+    
     }
 }
