@@ -27,6 +27,34 @@ namespace HeThongBanCam.Controllers
                 return Ok("Err");
             }
         }
+        [HttpGet("get-mahang-loai-sp")]
+        public IActionResult Gethangxs([FromQuery] int MaHang)
+        {
+            try
+            {
+                var result = (from s in db.HangSanXuats
+                              join spdr in db.LoaiCameras
+                              on s.MaHang equals spdr.MaHang
+                              join dr in db.Cameras
+                              on spdr.MaLoai equals dr.MaLoai
+                              where s.MaHang == MaHang
+
+                              select new { s, spdr, dr }).Select(x => new LoaiCamera()
+                              {
+                                  MaLoai = x.spdr.MaLoai,
+                                  MaHang = x.spdr.MaHang,
+                                  //TenLoai = x.spdr.TenLoai,
+                                  MoTa = x.spdr.MoTa,
+                                  TenLoai = x.dr.TenCamera,
+                              }).ToList();
+                return Ok(result);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
         [Route("get-Manufacturer-by-id/{id}")]
         [HttpGet]
         public IActionResult GetCagtegoryById(int id)

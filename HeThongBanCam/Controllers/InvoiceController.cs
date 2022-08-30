@@ -55,72 +55,195 @@ namespace HeThongBanCam.Controllers
                 return Ok("Err");
             }
         }
-        [Route("create-Invoice")]
-        [HttpPost]
-        public IActionResult CreateInvoice([FromBody] DonHang model)
+        private async Task<Responsive> Validate(DonHang dh, bool isUpdate = false)
         {
-            model.MaDonHang = Guid.NewGuid().ToString();
-
-            if (model.ChiTietDonHangs.Count > 0)
+            var message = "";
+            if (dh == null)
             {
-                foreach (var x in model.ChiTietDonHangs)
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (dh.MaDonHang == null)
+            {
+                message = "Không thể bỏ trống dữ liệu";
+                return new Responsive(message);
+            }
+            if (isUpdate == true)
+            {
+                var entity = db.DonHangs.Find(dh.MaDonHang);
+                if (entity != null && entity.MaDonHang != dh.MaDonHang)
                 {
-                    //x.MaChiTiet = Guid.NewGuid().ToString();
-                    x.MaDonHang = model.MaDonHang;
+                    message = "Mã Cam đã tồn tại";
+                    return new Responsive(message);
                 }
             }
-            db.DonHangs.Add(model);
-            db.SaveChanges();
-            return Ok(new { data = "OK" });
+            if (isUpdate == false)
+            {
+                var entity = db.DonHangs.Find(dh.MaDonHang);
+                if (entity != null)
+                {
+                    message = "Mã đã tồn tại";
+                    return new Responsive(message);
+                }
+            }
+            return new Responsive("", true);
+        }
+        [Route("create-Invoice")]
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] DonHang model)
+        {
+            try
+            {
+                model.MaDonHang = Guid.NewGuid().ToString();
+                if (model == null)
+                {
+                    return BadRequest("error");
+                }
+                var isvalid = await Validate(model);
+                if (!isvalid.isOk)
+                {
+                    return BadRequest(isvalid.Message);
+                }
+                else
+                {
+                    if (model.ChiTietDonHangs.Count > 0)
+                    {
+                        foreach (var x in model.ChiTietDonHangs)
+                        {
+                            //x.MaChiTiet = Guid.NewGuid().ToString();
+                            x.MaDonHang = model.MaDonHang;
+                        }
+                    }
+                    db.DonHangs.Add(model);
+                    var reuslt = db.SaveChanges();
+                    return Ok(new { data = reuslt, status = 201 });
+                }
+                //db.Cameras.Add(model);           
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            //model.MaDonHang = Guid.NewGuid().ToString();
+
+            //if (model.ChiTietDonHangs.Count > 0)
+            //{
+            //    foreach (var x in model.ChiTietDonHangs)
+            //    {
+            //        //x.MaChiTiet = Guid.NewGuid().ToString();
+            //        x.MaDonHang = model.MaDonHang;
+            //    }
+            //}
+            //db.DonHangs.Add(model);
+            //db.SaveChanges();
+            //return Ok(new { data = "OK" });
         }
         [Route("update-Invoice")]
         [HttpPost]
-        public IActionResult UpdateInvoice([FromBody] HoaDonNew model)
+        public async Task<IActionResult> Update([FromQuery] string id, [FromBody] DonHang model)
         {
-            var obj = db.DonHangs.Where(s => s.MaDonHang == model.MaDonHang).SingleOrDefault();
-            if (obj != null)
+            try
             {
-                obj.NgayTao = model.NgayTao;
-                obj.TongTien = model.TongTien;
-                obj.TenKhachHang = model.TenKhachHang;
-                obj.Sdt = model.Sdt;
-                obj.DiaChi = model.DiaChi;
-                obj.GhiChu = model.GhiChu;
-                obj.TrangThaiDonHang = model.TrangThaiDonHang;
-                obj.TrangThaiVanChuyen = model.TrangThaiVanChuyen;
-                obj.TrangThaiThanhToan = model.TrangThaiThanhToan;
-                if (model.ChiTietDonHangs.Count > 0)
+                var entity = db.DonHangs.FirstOrDefault(x => x.MaDonHang == id);
+                if (entity == null)
                 {
-                    foreach (var x in model.ChiTietDonHangs)
+                    return BadRequest("error");
+                }
+                var isValid = await Validate(model, true);
+                if (!isValid.isOk)
+                {
+                    return BadRequest(isValid.Message);
+                }
+                else
+                {
+                    entity.NgayTao = model.NgayTao;
+                    //entity.TongTien = model.TongTien;
+                    entity.TenKhachHang = model.TenKhachHang;
+                    entity.Sdt = model.Sdt;
+                    entity.DiaChi = model.DiaChi;
+                    entity.GhiChu = model.GhiChu;
+                    entity.TrangThaiDonHang = model.TrangThaiDonHang;
+                    entity.TrangThaiVanChuyen = model.TrangThaiVanChuyen;
+                    entity.TrangThaiThanhToan = model.TrangThaiThanhToan;
+                    if (model.ChiTietDonHangs.Count > 0)
                     {
-                        //if (x.MaDonHang != null)
-                        //{
-                            var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
-                            if (obj != null)
+                        foreach (var x in model.ChiTietDonHangs)
+                        {
+                            if (x.MaDonHang != null)
+                            {
+                                var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
+                            if (entity != null)
                             {
                                 oj.SoLuong = x.SoLuong;
                                 db.SaveChanges();
                             }
-                        //}
-                        //else
-                        //{
-                        //    var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
-                        //    db.ChiTietDonHangs.Remove(oj);
-                        //    db.SaveChanges();
-                        //}
+                            }
+                            else
+                            {
+                                var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
+                                db.ChiTietDonHangs.Remove(oj);
+                                db.SaveChanges();
+                            }
+                        }
                     }
+                    
+                  
+                    db.DonHangs.Update(entity);
+                    var result = db.SaveChanges();
+                    return Ok(new { data = result, status = 201 });
                 }
             }
-
-            return Ok(new { data = "OK" });
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
+        //public IActionResult UpdateInvoice([FromBody] HoaDonNew model)
+        //{
+        //    var obj = db.DonHangs.Where(s => s.MaDonHang == model.MaDonHang).SingleOrDefault();
+        //    if (obj != null)
+        //    {
+        //        obj.NgayTao = model.NgayTao;
+        //        obj.TongTien = model.TongTien;
+        //        obj.TenKhachHang = model.TenKhachHang;
+        //        obj.Sdt = model.Sdt;
+        //        obj.DiaChi = model.DiaChi;
+        //        obj.GhiChu = model.GhiChu;
+        //        obj.TrangThaiDonHang = model.TrangThaiDonHang;
+        //        obj.TrangThaiVanChuyen = model.TrangThaiVanChuyen;
+        //        obj.TrangThaiThanhToan = model.TrangThaiThanhToan;
+        //        if (model.ChiTietDonHangs.Count > 0)
+        //        {
+        //            foreach (var x in model.ChiTietDonHangs)
+        //            {
+        //                //if (x.MaDonHang != null)
+        //                //{
+        //                    var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
+        //                    if (obj != null)
+        //                    {
+        //                        oj.SoLuong = x.SoLuong;
+        //                        db.SaveChanges();
+        //                    }
+        //                //}
+        //                //else
+        //                //{
+        //                //    var oj = db.ChiTietDonHangs.Where(s => s.MaChiTietDonHang == x.MaChiTietDonHang).SingleOrDefault();
+        //                //    db.ChiTietDonHangs.Remove(oj);
+        //                //    db.SaveChanges();
+        //                //}
+        //            }
+        //        }
+        //    }
+
+        //    return Ok(new { data = "OK" });
+        //}
         [Route("thongketong-Invoice")]
         [HttpPost]
         public decimal tkInvoice()
         {    
             decimal TongTienn = 0;
                 TongTienn += decimal.Parse(db.ChiTietDonHangs.Sum(s => s.SoLuong * s.DonGia).ToString());
-            return TongTienn;
+            return TongTienn ;
         }
         [Route("thongke-Invoice{Thang}/{Nam}")]
         [HttpPost]
@@ -134,14 +257,29 @@ namespace HeThongBanCam.Controllers
             }
             return TongTienn;
         }
-        [Route("delete-Invoice/{mahd}")]
-        [HttpDelete]
-        public IActionResult DeleteInvoice(string mahd)
+        [HttpDelete("delete")]
+        //[HttpDelete, Authorize(Roles = "Admin")]
+        public IActionResult Delete([FromQuery] string id)
         {
-            var obj = db.DonHangs.Where(s => s.MaDonHang == mahd).SingleOrDefault();
-            db.DonHangs.Remove(obj);
-            db.SaveChanges();
-            return Ok(new { data = "OK" });
+            try
+            {
+                var reuslt = db.DonHangs.FirstOrDefault(x => x.MaDonHang == id);
+                if (reuslt == null)
+                {
+                    return BadRequest("can not find by id");
+                }
+                else
+                {
+                    db.DonHangs.Remove(reuslt);
+                    var res = db.SaveChanges();
+                    return Ok(new { data = res, status = 201 });
+                }
+
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
         public partial class HoaDonNew
         {
