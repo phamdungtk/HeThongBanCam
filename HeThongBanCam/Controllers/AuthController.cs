@@ -15,6 +15,7 @@ using HeThongBanCam.Helpers;
 using HeThongBanCam.Services.UserService;
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace HeThongBanCam.Controllers
 {
@@ -98,78 +99,34 @@ namespace HeThongBanCam.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] NguoiDung request)
         {
-            //try
-            //{
-            //    if (request == null)
-            //    {
-            //        return BadRequest("error");
-            //    }
-            //    var isvalid = await Validate(request);
-            //    if (!isvalid.isOk)
-            //    {
-            //        return BadRequest(isvalid.Message);
-            //    }
-            //    else
-            //    {
-            //        request.TenNguoiDung = request.TenNguoiDung;
-            //        db.NguoiDungs.Add(request);
-
-            //        db.SaveChanges();
-            //        return Ok(request);
-            //    }
-            //    //db.Cameras.Add(model);           
-            //}
-            //catch (Exception ex)
-            //{
-            //    return BadRequest(ex.Message);
-            //}
+            var tk = request.TaiKhoan;
+            var Pass = request.MatKhau;
+            var tnd = request.TenNguoiDung;
+            var sdt = request.Sdt;
+            var qq = request.QueQuan;
+            var em = request.Gmail;
+            var salt = DateTime.Now.ToString();
+            var Hashepw = HashPassword($"{Pass}{salt}");
             request.TenNguoiDung = request.TenNguoiDung;
-            db.NguoiDungs.Add(request);
-
+            db.NguoiDungs.Add(new NguoiDung() {TaiKhoan=tk , MatKhau = Hashepw, TenNguoiDung = tnd ,Sdt = sdt,QueQuan= qq,Gmail = em,Salt = salt});
             db.SaveChanges();
             return Ok(request);
         }
-
         [HttpPost("login")]
-
         public async Task<ActionResult<string>> Login(NguoiDung request)
-        {
-            //if (request == null)
-            //{
-            //    return BadRequest("error");
-            //}
-            //var isvalid = await Validate(request);
-            //if (!isvalid.isOk)
-            //{
-            //    return BadRequest(isvalid.Message);
-            //}
-            //else
-            //{
-            //    var userName = request.TaiKhoan;
-            //    var Pass = request.MatKhau;
-            //    var user = db.NguoiDungs.SingleOrDefault(x => x.TaiKhoan == userName && x.MatKhau == Pass);
-            //    if (user == null)
-            //    {
-            //        return Ok(new { message = "Tài khoản hoặc mật khẩu không chính xác" });
-            //    }
-
-            //    var obj = db.NguoiDungs.Where(s => s.TaiKhoan == request.TaiKhoan && s.MatKhau == request.MatKhau).SingleOrDefault();
-            //    if (obj != null)
-            //    {
-            //        obj.TenNguoiDung = request.TenNguoiDung;
-            //        db.SaveChanges();
-            //    }
-            //    string token = CreateToken(request);
-            //    return Ok(token);
-            //}
+        {           
             var userName = request.TaiKhoan;
             var Pass = request.MatKhau;
-            var user = db.NguoiDungs.SingleOrDefault(x => x.TaiKhoan == userName && x.MatKhau == Pass);
+            var user = db.NguoiDungs.SingleOrDefault(x => x.TaiKhoan == userName /*&& x.MatKhau == Pass*/);
+           
             if (user == null)
             {
                 return Ok(new { message = "Tài khoản hoặc mật khẩu không chính xác" });
             }
-
+            else if (HashPassword($"{Pass}{user.Salt}") != user.MatKhau)
+            {
+                return BadRequest("Wrong password.");
+            }
             var obj = db.NguoiDungs.Where(s => s.TaiKhoan == request.TaiKhoan && s.MatKhau == request.MatKhau).SingleOrDefault();
             if (obj != null)
             {
@@ -177,8 +134,16 @@ namespace HeThongBanCam.Controllers
                 db.SaveChanges();
             }
             string token = CreateToken(request);
+            //return Ok(new { data = token, Role = "Admin" });
             return Ok(token);
-        }    
+        } 
+        string  HashPassword( string password)
+        {
+            SHA256 hash = SHA256.Create();
+            var passwordBytes = Encoding.Default.GetBytes(password);
+            var hashepassword = hash.ComputeHash(passwordBytes);
+            return Convert.ToHexString(hashepassword);
+        }
         private string CreateToken(NguoiDung user)
         {
             List<Claim> claims = new List<Claim>

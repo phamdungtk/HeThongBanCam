@@ -226,8 +226,6 @@ namespace HeThongBanCam.Models
 
                 entity.ToTable("NguoiDung");
 
-                entity.Property(e => e.MatKhau).HasMaxLength(50);
-
                 entity.Property(e => e.TaiKhoan).HasMaxLength(50);
             });
 
